@@ -70,36 +70,30 @@ def main(*args):
     # near each other
     ypos_sets = contours.defineSets(criterium='ypos')
     height_sets = contours.defineSets(criterium='height')
-    # take interseptions that have 5-6 members
-    ok_sets6 = []
-    ok_sets5 = []    
-    for ypos_set in ypos_sets:
-        for height_set in height_sets:
-            myset = ypos_set.intersection(height_set)
-            if len(myset)==6 and myset not in ok_sets6:
-                ok_sets6.append(myset)
-            elif len(myset)==5 and myset not in ok_sets6:
-                ok_sets5.append(myset)
-    # take first 6 member set if exists, otherwise take first 5 member set
-    # otherwise fail
-    
-    print("len 6 sets, 5 sets: ", len(ok_sets6), len(ok_sets5))
-    print(ok_sets6, ok_sets5)
-    if len(ok_sets6) > 0:
-        ok_set = ok_sets6[0]
-    elif len(ok_sets5) > 0:
-        ok_set = ok_sets5[0]
-    else:
-        print("ypos_sets:", ypos_sets)
-        print("height_sets:", height_sets)        
-        raise notImplementedError("PLATE LETTERS NOT FOUND")
-    # mark all contours not belonging the found set for removal
-    contours.markNonSetContours(myset = ok_set)
-    # remove sets not belonging to letters in the number plate
-    contours.removeMarkedContours()
-    # sort contours by x coord
-    contours.sortContours(mykey='x')
 
+
+    # take interseptions that have 5-6 members, longest come first
+    ok_sets = contours.getInterception(set1=ypos_sets, set2=height_sets)
+
+    #loop possible contours, until subsequent x criterium is fulfilled
+    ok = False
+    for ok_set in ok_sets:
+        clone = contours.getContoursOnly()
+        # mark all contours not belonging the found set for removal
+        print("okset", ok_set)
+        contours.markNonSetContours(myset = ok_set)
+        # remove sets not belonging to letters in the number plate
+        contours.removeMarkedContours()
+        # sort contours by x coord
+        contours.sortContours(mykey='x')
+        # check subsequent x condition
+        ok = contours.checkSubsequent()
+        if ok:
+            break
+        contours.setContoursOnly(npaContours=clone)
+
+    if not ok:
+        raise RuntimeError("could not find letters, sorry")
     # declare final string,
     # this will have the final number sequence by the end of the program
     strFinalString = ""         

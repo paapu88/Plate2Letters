@@ -103,12 +103,23 @@ class ContoursWithFilters():
     def getContoursOnly(self):
         return self.npaContours
 
+    def setContoursOnly(self, npaContours=None):
+        self.npaContours = npaContours
+
     def getLenContours(self):
         return len(self.npaContours)
 
     def getKillIndex(self):
         return self.kill_index
-        
+
+    def checkContourHeight(self, boundingRect=None, accept_ratio=0.3):
+        """ mark too small in height to be killed """
+        [intX, intY, intWidth, intHeight] = boundingRect
+        if intHeight/self.image.shape[0] < accept_ratio:
+            return True
+        else:
+            return False
+
     def checkContourRatio(self, max_ratio=None, min_ratio=None,
                           boundingRect=None):
         """" check whether the y/x ratio of the contour is bad """
@@ -128,13 +139,48 @@ class ContoursWithFilters():
             return True
         else:
             return False
-    
+
+    def get_standard_deviation(self, index, mykey='x', divide='y'):
+        """ NOT USED: calculate standard deviation of contours """
+        if mykey=='x':
+            feature=0
+        else:
+            raise NotImplementedError("NOT IMPLEMENTED in getStandardDeviation")
+        vec = np.zeros(len(index))
+        heights = np.zeros(len(index))
+        for i, ind in enumerate(index):
+            vec[i] = cv2.boundingRect(self.npaContours[i])[2]
+            heights[i] = cv2.boundingRect(self.npaContours[i])[3]
+        result = np.std(vec)
+        if divide=='y':
+            result = result/np.mean(heights)
+        return result
+
+    def checkSubsequent(self, mykey='x', mymin=0.5, mymax=2.5, ratio=1.5):
+        """Check that contours are near enought each other,
+        use hight of a letter, because that is more constant"""
+        ok = True
+        if mykey == 'x':
+            x_previous = cv2.boundingRect(self.npaContours[0])[0]
+            for contour in self.npaContours[1:]:
+
+                x_next = cv2.boundingRect(contour)[0]
+                diff = x_next - x_previous
+                bredth = cv2.boundingRect(contour)[3]/ratio
+                print("dx check:", diff, bredth)
+                if (diff > mymax * bredth) or (diff < mymin * bredth):
+                    ok = False
+                    break
+                x_previous = x_next
+        else:
+            raise NotImplementedError("only x implemented in chekckSubsequent")
+        return ok
 
     def markTooSmallorWrongAspectRatio(self,
                                        min_area=100,
                                        min_ratio=1.3,
                                        max_ratio=8.0):
-        """ mark contours that are too small or have wrong aspect ratio """
+        """ mark contours that are too small (by area or height) or have wrong aspect ratio """
 
         # for each contour
         for i, (npaContour, npaHierarchy) in \
@@ -144,10 +190,9 @@ class ContoursWithFilters():
                                       min_ratio=min_ratio,
                                       boundingRect=boundingRect) \
                 or self.checkContourArea(min_area=min_area, 
-                                         boundingRect=boundingRect):
+                                         boundingRect=boundingRect) \
+                or self.checkContourHeight(boundingRect=boundingRect,accept_ratio=0.3):
                 self.kill_index.append(i)
-
-                
 
 
     def setOrphans(self):
@@ -166,10 +211,10 @@ class ContoursWithFilters():
                 self.kill_index.append(i)
 
     def markNonSetContours(self, myset=None):
-        """ contours with indexes NOT belongint to the set are marked
+        """ contours with indexes NOT belonging to the set are marked
             for removal """
         for i, npaContour in enumerate(self.npaContours):        
-            if i not in myset:
+            if i not in list(myset):
                 self.kill_index.append(i)                
 
     def removeMarkedContours(self):
@@ -187,7 +232,7 @@ class ContoursWithFilters():
         if mykey=='x': 
             feature=0
         else:
-            raise notImplementedError("NOT IMPLEMENTED in sortContours")
+            raise NotImplementedError("NOT IMPLEMENTED in sortContours")
 
         print("SHAPE:",self.npaContours.shape)
         #print(self.npaContours[0])
@@ -210,7 +255,7 @@ class ContoursWithFilters():
         elif criterium == 'height':
             feature = 3
         else:
-            raise notImplementedError("NOT IMPLEMENTED in defineSets")
+            raise NotImplementedError("NOT IMPLEMENTED in defineSets")
 
         for i, npaContour in enumerate(self.npaContours):
             f1= cv2.boundingRect(npaContour)[feature]
@@ -226,3 +271,22 @@ class ContoursWithFilters():
                 sets.append(myset)
         #print("defined SETS", self.npaContours.shape)
         return sets
+
+    def getInterception(self, set1=None, set2=None):
+        """get interception of two sets, arrangel resulting sets so that longest comes first"""
+
+        ok_sets = []
+        for s1 in set1:
+            for s2 in set2:
+                myset = s1.intersection(s2)
+                if len(myset)==6 and myset not in ok_sets:
+                    ok_sets.append(myset)
+                elif len(myset)==5 and myset not in ok_sets:
+                    ok_sets.append(myset)
+
+        ok_lists=[]
+        for ok_set in ok_sets:
+            ok_lists.append(list(ok_set))
+        print("1",ok_lists)
+        print("2a",len(ok_lists), ok_lists.sort(key=len))
+        return sorted(ok_lists, key=len, reverse=True)
