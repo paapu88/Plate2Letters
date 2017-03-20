@@ -28,7 +28,11 @@ class ContoursWithFilters():
             clone = self.image.copy()
         else:
             clone = image_in.copy()
-        self.gray = cv2.cvtColor(clone, cv2.COLOR_BGR2GRAY)
+        try:
+            self.gray = cv2.cvtColor(clone, cv2.COLOR_BGR2GRAY)
+        except:
+            # in case it was gray already
+            self.gray = clone
 
     def getImage(self):
         return self.image.copy()
@@ -77,8 +81,8 @@ class ContoursWithFilters():
                                           # or weighted mean
                                           self.thres_pixel_sub)
 
-        cv2.imshow("imgThresh", self.thres.copy())
-        intChar = cv2.waitKey(0) 
+        #cv2.imshow("imgThresh", self.thres.copy())
+        #intChar = cv2.waitKey(0)
 
     def getThreshold(self):
         return self.thres.copy()                
@@ -167,7 +171,7 @@ class ContoursWithFilters():
                 x_next = cv2.boundingRect(contour)[0]
                 diff = x_next - x_previous
                 bredth = cv2.boundingRect(contour)[3]/ratio
-                print("dx check:", diff, bredth)
+                #print("dx check:", diff, bredth)
                 if (diff > mymax * bredth) or (diff < mymin * bredth):
                     ok = False
                     break
@@ -234,14 +238,14 @@ class ContoursWithFilters():
         else:
             raise NotImplementedError("NOT IMPLEMENTED in sortContours")
 
-        print("SHAPE:",self.npaContours.shape)
+        #print("SHAPE:",self.npaContours.shape)
         #print(self.npaContours[0])
         mykeys = []        
         for npaContour in self.npaContours:
             mykeys.append(cv2.boundingRect(npaContour)[feature])
         np_mykeys=np.array(mykeys)
-        print("np_mykeys: ",np_mykeys)
-        print("shapes", self.npaContours.shape, np_mykeys.shape)
+        #print("np_mykeys: ",np_mykeys)
+        #print("shapes", self.npaContours.shape, np_mykeys.shape)
         sorted_idx = np.argsort(np_mykeys)
         self.npaContours = self.npaContours[sorted_idx]
 
@@ -281,12 +285,13 @@ class ContoursWithFilters():
                 myset = s1.intersection(s2)
                 if len(myset)==6 and myset not in ok_sets:
                     ok_sets.append(myset)
-                elif len(myset)==5 and myset not in ok_sets:
-                    ok_sets.append(myset)
+                #lets take only 6-plates to start with
+                #elif len(myset)==5 and myset not in ok_sets:
+                #    ok_sets.append(myset)
 
         ok_lists=[]
         for ok_set in ok_sets:
             ok_lists.append(list(ok_set))
-        print("1",ok_lists)
-        print("2a",len(ok_lists), ok_lists.sort(key=len))
+        #print("1",ok_lists)
+        #print("2a",len(ok_lists), ok_lists.sort(key=len))
         return sorted(ok_lists, key=len, reverse=True)

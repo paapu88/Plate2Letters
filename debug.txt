@@ -1,0 +1,7 @@
+1.0 frame, plate(s): 
+101.0 frame, plate(s): 
+201.0 frame, plate(s): 
+301.0 frame, plate(s): 
+401.0 frame, plate(s): 
+501.0 frame, plate(s): 
+601.0 frame, plate(s): NOT FOUND 
