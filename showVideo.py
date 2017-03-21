@@ -1,8 +1,6 @@
-# python3 ./showVideo.py /home/mka/Videos/rekkari1.mp4 True 4
+#python3 ./showVideo.py ./veetiauto1.mp4 False 5
 
-# the last argument is:
-# True if video mut be rotated clockwise to get licence plates horizontal
-# False if no rotation (plates are ok in the video)
+
 
 import cv2
 import numpy as np

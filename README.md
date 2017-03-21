@@ -5,11 +5,11 @@ At the moment the licence plate must be BIG in the video to become recognized
 ( i did not realize that resolution in a camera and in a video recorder differ so much)...
 
 Usage
-python3 ./showVideo.py /home/mka/Videos/rekkari1.mp4 False 4
+python3 ./showVideo.py ./veetiauto1.mp4 False 5
 
-First argument is the filename of the video
-The second argument: set True if you need to rotate the image
-The last argument is how many frames are skipped when reading
+1st argument: the filename of the video
+2nd argument: set True if you need to rotate the image
+3rd argument: how many frames are skipped when reading
 
 Push start at QT window
 
