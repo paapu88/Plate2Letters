@@ -1,4 +1,4 @@
-# python3 GenData.py "./Positives/*5.jpg"
+# python3 GenData.py "/home/mka/PycharmProjects/OpenCV_3_KNN_Character_Recognition_Python/Positives/*5.jpg"
 
 import sys
 import numpy as np
@@ -6,14 +6,15 @@ import cv2
 import os
 from myContours import ContoursWithFilters
 
-RESIZED_IMAGE_WIDTH = 20
-RESIZED_IMAGE_HEIGHT = 30
+resolutions = [(8,12),(10,15)]
+npaFlattenedImagesWithRes = [None, None]
+#npaFlattenedImagesWithRes.append(np.empty(0, resolutions[0][0]*resolutions[0][1]))
+#npaFlattenedImagesWithRes.append(np.empty(0, resolutions[1][0]*resolutions[1][1]))
+
 
 def main(*args):
     from glob import glob
 
-    npaFlattenedImages \
-        =  np.empty((0, RESIZED_IMAGE_WIDTH * RESIZED_IMAGE_HEIGHT))
 
     # declare empty classifications list,
     # this will be our list of how we are classifying our
@@ -79,10 +80,7 @@ def main(*args):
 
             # crop char out of threshold image
             imgROI = contours.getThreshold()[intY:intY+intH, intX:intX+intW]
-            # resize image    
-            imgROIResized \
-                = cv2.resize(imgROI,
-                             (RESIZED_IMAGE_WIDTH, RESIZED_IMAGE_HEIGHT))     
+
             # show cropped out char for reference
             # cv2.imshow("imgROI", imgROI)
             # show resized image for reference
@@ -99,24 +97,38 @@ def main(*args):
                 print(intChar)
                 # append classification char to integer list of chars
                 # (we will convert to float later before writing to file)
-                intClassifications.append(intChar)                                                
+                intClassifications.append(intChar)
 
-                # flatten image to 1d numpy array so we can write to file later
-                npaFlattenedImage \
-                    = imgROIResized.\
-                    reshape((1, RESIZED_IMAGE_WIDTH * RESIZED_IMAGE_HEIGHT))
-                # add current flattened impage numpy array to
-                # list of flattened image numpy arrays
-                npaFlattenedImages\
+                for i, (RESIZED_IMAGE_WIDTH, RESIZED_IMAGE_HEIGHT) in enumerate(resolutions):
 
-    fltClassifications = np.array(intClassifications, np.float32)                   # convert classifications list of ints to numpy array of floats
+                    # resize image
+                    imgROIResized \
+                        = cv2.resize(imgROI,
+                                     (RESIZED_IMAGE_WIDTH, RESIZED_IMAGE_HEIGHT))
 
-    npaClassifications = fltClassifications.reshape((fltClassifications.size, 1))   # flatten numpy array of floats to 1d so we can write to file later
+                    # flatten image to 1d numpy array so we can write to file later
+                    npaFlattenedImage \
+                        = imgROIResized.\
+                        reshape((1, RESIZED_IMAGE_WIDTH * RESIZED_IMAGE_HEIGHT))
+                    # add current flattened impage numpy array to
+                    # list of flattened image numpy arrays
+                    if npaFlattenedImagesWithRes[i] is None:
+                        npaFlattenedImagesWithRes[i] = npaFlattenedImage
+                    else:
+                        npaFlattenedImagesWithRes[i] = np.append(npaFlattenedImagesWithRes[i], npaFlattenedImage, 0)
 
-    print("\n\ntraining complete !!\n")
 
-    np.savetxt("classifications.txt", npaClassifications)           # write flattened images to file
-    np.savetxt("flattened_images.txt", npaFlattenedImages)          #
+    for i, (RESIZED_IMAGE_WIDTH, RESIZED_IMAGE_HEIGHT) in enumerate(resolutions):
+        # convert classifications list of ints to numpy array of floats
+        fltClassifications = np.array(intClassifications, np.float32)
+        # flatten numpy array of floats to 1d so we can write to file later
+        npaClassifications = fltClassifications.reshape((fltClassifications.size, 1))
+
+        print("\n\ntraining complete !!\n")
+
+        np.savetxt("classifications.txt", npaClassifications)           # write flattened images to file
+        np.savetxt("flattened_images-x"+str(RESIZED_IMAGE_WIDTH)+"-y"+\
+            str(RESIZED_IMAGE_HEIGHT)+".txt", npaFlattenedImagesWithRes[i])
 
     cv2.destroyAllWindows()             # remove windows from memory
 

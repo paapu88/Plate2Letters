@@ -1,7 +1,51 @@
 1.0 frame, plate(s): 
+6.0 frame, plate(s): 
+11.0 frame, plate(s): 
+16.0 frame, plate(s): 
+21.0 frame, plate(s): 
+26.0 frame, plate(s): 
+31.0 frame, plate(s): 
+36.0 frame, plate(s): 
+41.0 frame, plate(s): 
+46.0 frame, plate(s): 
+51.0 frame, plate(s): 
+56.0 frame, plate(s): 
+61.0 frame, plate(s): 
+66.0 frame, plate(s): 
+71.0 frame, plate(s): 
+76.0 frame, plate(s): 
+81.0 frame, plate(s): 
+86.0 frame, plate(s): 
+91.0 frame, plate(s): 
+96.0 frame, plate(s): 
 101.0 frame, plate(s): 
+106.0 frame, plate(s): 
+111.0 frame, plate(s): NOT FOUND 
+116.0 frame, plate(s): NOT FOUND 
+121.0 frame, plate(s): FK5-649 
+126.0 frame, plate(s): FK5-649 
+131.0 frame, plate(s): FK5-649 
+136.0 frame, plate(s): FK5-649 
+141.0 frame, plate(s): FK5-649 
+146.0 frame, plate(s): FK0-649 
+151.0 frame, plate(s): FK5-649 
+156.0 frame, plate(s): FX5-649 
+161.0 frame, plate(s): FX5-649 
+166.0 frame, plate(s): 
+171.0 frame, plate(s): 
+176.0 frame, plate(s): 
+181.0 frame, plate(s): 
+186.0 frame, plate(s): 
+191.0 frame, plate(s): 
+196.0 frame, plate(s): 
 201.0 frame, plate(s): 
-301.0 frame, plate(s): 
-401.0 frame, plate(s): 
-501.0 frame, plate(s): 
-601.0 frame, plate(s): NOT FOUND 
+206.0 frame, plate(s): 
+211.0 frame, plate(s): 
+216.0 frame, plate(s): 
+221.0 frame, plate(s): 
+226.0 frame, plate(s): 
+231.0 frame, plate(s): 
+236.0 frame, plate(s): 
+241.0 frame, plate(s): 
+246.0 frame, plate(s): 
+251.0 frame, plate(s): 

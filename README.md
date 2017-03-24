@@ -13,5 +13,10 @@ python3 ./showVideo.py ./veetiauto1.mp4 False 5
 
 Push start at QT window
 
+By ffmpeg one gets frame by frame:
+ffmpeg -i Rekisteri_4_short.mp4 -r 1/1 %03d.jpg
+and to check resolution:
+python3 ~/PycharmProjects/Plate2Letters/showPictureMatplotlib.py 001.jpg
+by zooming it seem the minimum resolution is 8x12, try also 10x15
 
 

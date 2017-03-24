@@ -7,8 +7,8 @@ import os
 import sys
 from myContours import ContoursWithFilters
 
-RESIZED_IMAGE_WIDTH = 20
-RESIZED_IMAGE_HEIGHT = 30
+RESIZED_IMAGE_WIDTH = 8
+RESIZED_IMAGE_HEIGHT = 12
 
 
 class GetPlateWithKNN():
