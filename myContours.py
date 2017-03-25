@@ -21,7 +21,7 @@ class ContoursWithFilters():
         self.thres_pixel_sub = thres_pixel_sub
         self.npaContours = None      # contours
         self.npaHierarchies = None   # hierarcly of contours
-        self.kill_index = []         # index list of contours to be removed
+        self.kill_index = set()      # index list of contours to be removed
 
     def setGray(self, image_in=None):
         if image_in is None:
@@ -56,7 +56,10 @@ class ContoursWithFilters():
     def setThreshold(self, image_in=None,
                      thres_pixel_neib=None, thres_pixel_sub=None):
         if image_in is None:
-            clone = self.blur.copy()
+            if self.blur is not None:
+                clone = self.getBlur()
+            else:
+                clone = self.getGray()
         else:
             clone = image_in.copy()
         if thres_pixel_neib is not None:
@@ -85,11 +88,18 @@ class ContoursWithFilters():
         #intChar = cv2.waitKey(0)
 
     def getThreshold(self):
-        return self.thres.copy()                
-        
+        if self.thres is not None:
+            return self.thres.copy()
+        elif self.blur is not None:
+            return self.blur.copy()
+        elif self.gray is not None:
+            return self.gray.copy()
+        else:
+            return self.image.copy()
+
     def setContours(self, image_in=None):
         if image_in is None:
-            clone = self.thres.copy()
+            clone = self.getThreshold()
         else:
             clone = image_in.copy()
         dummy, self.npaContours, self.npaHierarchies\
@@ -116,33 +126,36 @@ class ContoursWithFilters():
     def getKillIndex(self):
         return self.kill_index
 
-    def checkContourHeight(self, boundingRect=None, accept_ratio=0.3):
+    def checkContourHeight(self, accept_ratio=0.3):
         """ mark too small in height to be killed """
-        [intX, intY, intWidth, intHeight] = boundingRect
-        if intHeight/self.image.shape[0] < accept_ratio:
-            return True
-        else:
-            return False
+        for i, (npaContour, npaHierarchy) in \
+            enumerate(zip(self.npaContours, self.npaHierarchies)):
+            [intX, intY, intWidth, intHeight] = cv2.boundingRect(npaContour)
+            if intHeight/self.image.shape[0] < accept_ratio:
+                self.kill_index.add(i)
 
-    def checkContourRatio(self, max_ratio=None, min_ratio=None,
-                          boundingRect=None):
+    def checkContourRatio(self, max_ratio=None, min_ratio=None):
         """" check whether the y/x ratio of the contour is bad """
-        [intX, intY, intWidth, intHeight] = boundingRect        
-        if ((intHeight / intWidth ) > max_ratio) or \
-           ((intHeight / intWidth ) < min_ratio):
-            #print("ratio:", str(intHeight / intWidth ))
-            return True
-        else:
-            return False
+        for i, (npaContour, npaHierarchy) in \
+            enumerate(zip(self.npaContours, self.npaHierarchies)):
+            [intX, intY, intWidth, intHeight] = cv2.boundingRect(npaContour)
+            if ((intHeight / intWidth ) > max_ratio) or \
+               ((intHeight / intWidth ) < min_ratio):
+                #print("ratio:", str(intHeight / intWidth ))
+                self.kill_index.add(i)
 
-    def checkContourArea(self, min_area=None, boundingRect=None):
+    def checkContourArea(self, min_area=1, max_area=100000):
         """" check whether the are of contour is too small """
-        [intX, intY, intWidth, intHeight] = boundingRect        
-        if (intWidth * intHeight) < min_area:
-            #print("area", intWidth * intHeight, min_area)
-            return True
-        else:
-            return False
+        # for each contour
+        for i, (npaContour, npaHierarchy) in \
+            enumerate(zip(self.npaContours, self.npaHierarchies)):
+            [intX, intY, intWidth, intHeight] = cv2.boundingRect(npaContour)
+            print("A",intX, intY, intWidth, intHeight,min_area, max_area)
+            if (intWidth * intHeight) < min_area:
+                self.kill_index.add(i)
+            elif (intWidth * intHeight) > max_area:
+                self.kill_index.add(i)
+
 
     def get_standard_deviation(self, index, mykey='x', divide='y'):
         """ NOT USED: calculate standard deviation of contours """
@@ -180,24 +193,6 @@ class ContoursWithFilters():
             raise NotImplementedError("only x implemented in chekckSubsequent")
         return ok
 
-    def markTooSmallorWrongAspectRatio(self,
-                                       min_area=100,
-                                       min_ratio=1.3,
-                                       max_ratio=8.0):
-        """ mark contours that are too small (by area or height) or have wrong aspect ratio """
-
-        # for each contour
-        for i, (npaContour, npaHierarchy) in \
-            enumerate(zip(self.npaContours, self.npaHierarchies)):
-            boundingRect=cv2.boundingRect(npaContour)         
-            if self.checkContourRatio(max_ratio=max_ratio,
-                                      min_ratio=min_ratio,
-                                      boundingRect=boundingRect) \
-                or self.checkContourArea(min_area=min_area, 
-                                         boundingRect=boundingRect) \
-                or self.checkContourHeight(boundingRect=boundingRect,accept_ratio=0.3):
-                self.kill_index.append(i)
-
 
     def setOrphans(self):
         """ set contours whose parent has been killed as orphans """
@@ -212,23 +207,24 @@ class ContoursWithFilters():
         for i, npaHierarchy in enumerate(self.npaHierarchies):        
             my_parent = npaHierarchy[-1]
             if my_parent != -1:
-                self.kill_index.append(i)
+                self.kill_index.add(i)
 
     def markNonSetContours(self, myset=None):
         """ contours with indexes NOT belonging to the set are marked
             for removal """
         for i, npaContour in enumerate(self.npaContours):        
             if i not in list(myset):
-                self.kill_index.append(i)                
+                self.kill_index.add(i)
 
     def removeMarkedContours(self):
         """ remove contours that have been listed in kill_index 
             also remove corresponding hierarchy indexes"""
+
         self.npaContours = np.delete(
-            self.npaContours, self.kill_index, axis=0)
+            self.npaContours, list(self.kill_index), axis=0)
         self.npaHierarchies = np.delete(
-            self.npaHierarchies, self.kill_index, axis=0)
-        self.kill_index = []
+            self.npaHierarchies, list(self.kill_index), axis=0)
+        self.kill_index = set()
 
     def sortContours(self, mykey='x'):
         """ sort contours by some position criterium """

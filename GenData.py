@@ -1,3 +1,4 @@
+# python3 GenData.py "/home/mka/Pictures/rekkariKirjaimistoMusta.png"
 # python3 GenData.py "/home/mka/PycharmProjects/OpenCV_3_KNN_Character_Recognition_Python/Positives/*5.jpg"
 
 import sys
@@ -35,7 +36,8 @@ def main(*args):
                      ord('p'), ord('q'), ord('r'),
                      ord('s'), ord('t'), ord('u'),
                      ord('v'), ord('w'), ord('x'),
-                     ord('y'), ord('z'), ord('å')]
+                     ord('y'), ord('z'), ord('å'),
+                     ord('ä'), ord('ö') ]
 
     files = glob(sys.argv[1])
     print("files:", files)
@@ -46,16 +48,18 @@ def main(*args):
         # get grayscale image
         contours.setGray()
         # blur
-        contours.setBlur()
+        contours.setBlur(blurSize=(7,7))
         # filter image from grayscale to black and white, use threshold
-        contours.setThreshold()
+        contours.setThreshold(thres_pixel_neib=7, thres_pixel_sub=2)
         # show threshold image for reference
         #cv2.imshow("imgThresh", contours.getThreshold())
-        #intChar = cv2.waitKey(0) 
+        #intChar = cv2.waitKey(0)
         # estimate the contours by opencv
         contours.setContours()
+        print("len contours 1", contours.getLenContours())
         # mark contours that have bad size or aspect ratio
-        contours.markTooSmallorWrongAspectRatio()
+        contours.checkContourArea(min_area=1000, max_area=6000)
+        contours.checkContourRatio(max_ratio=7, min_ratio=0.8)
         # set contours whose parent has been killed to be orphans
         contours.setOrphans()
         # mark all contours who still have parents for removal
@@ -64,8 +68,31 @@ def main(*args):
         # finally kill all marked contours
         # (wrong shape or having a parent)
         contours.removeMarkedContours()
-        
+        print("len contours 2", contours.getLenContours())
         ok_contours = contours.getContoursOnly()
+
+        imgCopy = contours.getImage()
+        for npaContour in ok_contours:
+            # get and break out bounding rect
+            [intX, intY, intW, intH] = cv2.boundingRect(npaContour)
+
+            # draw rectangle around each contour as we ask user for input
+            cv2.rectangle(imgCopy,   #original (color?)image
+                          (intX, intY),                 # upper left corner
+                          (intX+intW,intY+intH),        # lower right corner
+                          (0, 0, 255),                  # red
+                          2)                            # thickness
+
+            # crop char out of threshold image
+            #imgROI = contours.getThreshold()[intY:intY+intH, intX:intX+intW]
+
+            # show cropped out char for reference
+            # cv2.imshow("imgROI", imgROI)
+            # show training numbers image,
+            # this will now have red rectangles drawn on it
+        cv2.imshow("training", imgCopy)
+        intChar = cv2.waitKey(0)                     # get key press
+
         for npaContour in ok_contours:
             # get and break out bounding rect
             [intX, intY, intW, intH] = cv2.boundingRect(npaContour)
@@ -83,8 +110,6 @@ def main(*args):
 
             # show cropped out char for reference
             # cv2.imshow("imgROI", imgROI)
-            # show resized image for reference
-            #cv2.imshow("imgROIResized", imgROIResized)
             # show training numbers image,
             # this will now have red rectangles drawn on it            
             cv2.imshow("training", imgCopy)  
@@ -106,6 +131,8 @@ def main(*args):
                         = cv2.resize(imgROI,
                                      (RESIZED_IMAGE_WIDTH, RESIZED_IMAGE_HEIGHT))
 
+                    # show resized image for reference
+                    cv2.imshow("imgROIResized", imgROIResized)
                     # flatten image to 1d numpy array so we can write to file later
                     npaFlattenedImage \
                         = imgROIResized.\

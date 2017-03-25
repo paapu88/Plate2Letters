@@ -1,4 +1,4 @@
-# python3 TrainAndTest.py '~/PycharmProjects/Rekkari/Training/img/sample_pos5.jpg'
+# python3 getPlateWithKNN.py '/home/mka/PycharmProjects/Rekkari/Training/img/sample_pos5.jpg' 'flattened_images-x8-y12.txt'
 
 import cv2
 import numpy as np
@@ -7,8 +7,11 @@ import os
 import sys
 from myContours import ContoursWithFilters
 
-RESIZED_IMAGE_WIDTH = 8
-RESIZED_IMAGE_HEIGHT = 12
+
+resolution=(8,12)
+
+RESIZED_IMAGE_WIDTH = resolution[0]
+RESIZED_IMAGE_HEIGHT = resolution[1]
 
 
 class GetPlateWithKNN():
@@ -16,7 +19,11 @@ class GetPlateWithKNN():
         use it to get the characters from a Finninsh licence plate"""
 
     def __init__(self, classificationFileName='classifications.txt',
-                 flatImagesFileName='flattened_images.txt'):
+                 flatImagesFileName=None):
+
+        if flatImagesFileName is None:
+            flatImagesFileName = "flattened_images-x" + str(RESIZED_IMAGE_WIDTH) + \
+                                 "-y" + str(RESIZED_IMAGE_HEIGHT) + ".txt"
         # train the KNN classifier, unfortunately a trained classifier cannot be saved/loaded
         # read in training classifications
         print("Training classifier start")
@@ -32,7 +39,7 @@ class GetPlateWithKNN():
         # to my understanting (mok), in opencv3 one cannot save the trained classifier
         print("Training classifier end")
 
-    def plate2Chars(self, image=None):
+    def plate2Chars(self, image=None, useBlur=False):
         """ for a given image, returns the plate 5 or 6 characters as characters"""
         # read in testing plate
         contours = ContoursWithFilters(image = image)
@@ -41,7 +48,8 @@ class GetPlateWithKNN():
         # get grayscale image
         contours.setGray()
         # blur
-        contours.setBlur()
+        if useBlur:
+            contours.setBlur()
         # filter image from grayscale to black and white, use threshold
         #contours.setThreshold(thres_pixel_neib=8, thres_pixel_sub=1)
         contours.setThreshold()        
@@ -50,9 +58,21 @@ class GetPlateWithKNN():
         #intChar = cv2.waitKey(0)
         # estimate the contours by opencv
         contours.setContours()
-        #print("len contours", contours.getLenContours())
+        print("len contours", contours.getLenContours())
+        #for contour in contours.getContoursOnly():
+        #    [intX, intY, intWidth, intHeight] = cv2.boundingRect(contour)
+        #    # draw a green rect around the current char
+        #    cv2.rectangle(image,
+        #                  (intX, intY),  # upper left corner
+        #                  (intX + intWidth, intY + intHeight),  # lower right corner
+        #                  (0, 255, 0),  # green
+        #                  1)  # thickness
+        #cv2.imshow("imgT", image)
+        #intChar = cv2.waitKey(0)
+
         # mark contours that have bad size or aspect ratio
-        contours.markTooSmallorWrongAspectRatio()
+        contours.checkContourArea(min_area=50, max_area=6000)
+        contours.checkContourRatio(max_ratio=7, min_ratio=0.8)
         #print("kill smalls:", contours.getKillIndex())
         # set contours whose parent has been killed to be orphans
         contours.setOrphans()
@@ -62,14 +82,30 @@ class GetPlateWithKNN():
         # finally kill all marked contours
         # (wrong shape or having a parent)
         contours.removeMarkedContours()
-        # print("len contours 2 : ", contours.getLenContours())
+        print("len contours 2 : ", contours.getLenContours())
+        for contour in contours.getContoursOnly():
+            [intX, intY, intWidth, intHeight] = cv2.boundingRect(contour)
+            # draw a green rect around the current char
+            cv2.rectangle(image,
+                          (intX, intY),  # upper left corner
+                          (intX + intWidth, intY + intHeight),  # lower right corner
+                          (0, 0, 255),  # green
+                          1)  # thickness
+        cv2.imshow("imgT", image)
+        intChar = cv2.waitKey(0)
+
         # now we should find (5) or 6 countours of same height
         # near each other
         ypos_sets = contours.defineSets(criterium='ypos')
+        print("YPOS:",len(ypos_sets))
+
         height_sets = contours.defineSets(criterium='height')
+        print("HEIGHT:", len(height_sets))
 
         # take interseptions that have 5-6 members, longest come first
         ok_sets = contours.getInterception(set1=ypos_sets, set2=height_sets)
+        #ok_sets = contours.getContoursOnly()
+        print("LEN",len(ok_sets))
 
         #loop possible contours, until subsequent x criterium is fulfilled
         ok = False
@@ -82,8 +118,20 @@ class GetPlateWithKNN():
             contours.removeMarkedContours()
             # sort contours by x coord
             contours.sortContours(mykey='x')
-            #    check subsequent x condition
+            # check subsequent x condition
             ok = contours.checkSubsequent()
+            for contour in contours.getContoursOnly():
+                [intX, intY, intWidth, intHeight] = cv2.boundingRect(contour)
+                # draw a green rect around the current char
+                cv2.rectangle(image,
+                              (intX, intY),  # upper left corner
+                              (intX + intWidth, intY + intHeight),  # lower right corner
+                              (0, 255, 255),  # green
+                              2)  # thickness
+            cv2.imshow("imgT", image)
+            intChar = cv2.waitKey(0)
+
+
             if ok:
                 break
             contours.setContoursOnly(npaContours=clone)
@@ -99,11 +147,11 @@ class GetPlateWithKNN():
         for contour in contours.getContoursOnly():
             [intX, intY, intWidth, intHeight]=cv2.boundingRect(contour)
             # draw a green rect around the current char
-            #cv2.rectangle(image,
-            #              (intX, intY),     # upper left corner
-            #              (intX + intWidth, intY + intHeight),# lower right corner
-            #              (0, 255, 0),              # green
-            #             2)                        # thickness
+            cv2.rectangle(image,
+                          (intX, intY),     # upper left corner
+                          (intX + intWidth, intY + intHeight),# lower right corner
+                          (0, 0, 255),              # blue
+                          2)                        # thickness
 
             # crop char out of threshold image
             imgROI = contours.getThreshold()[intY : intY + intHeight,
@@ -147,8 +195,10 @@ class GetPlateWithKNN():
 
 ###################################################################################################
 if __name__ == "__main__":
-    getplate = GetPlateWithKNN()
-    print("PLATE RESULT:", getplate.plate2Chars(filename=sys.argv[1]))
+    if len(sys.argv) > 1:
+        getplate = GetPlateWithKNN(flatImagesFileName=sys.argv[2])
+    image = cv2.imread(sys.argv[1])
+    print("PLATE RESULT:", getplate.plate2Chars(image=image, useBlur=True))
 
 
 
