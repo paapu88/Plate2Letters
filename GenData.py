@@ -7,6 +7,9 @@ import cv2
 import os
 from myContours import ContoursWithFilters
 
+# the resolution should be the same as in
+# mySlices (there it is 5/7, here 2/3...)
+
 resolutions = [(8,12),(10,15)]
 npaFlattenedImagesWithRes = [None, None]
 #npaFlattenedImagesWithRes.append(np.empty(0, resolutions[0][0]*resolutions[0][1]))
