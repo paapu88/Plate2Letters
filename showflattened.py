@@ -1,4 +1,4 @@
-# python3 showflattened.py flattened_images-x10-y15.txt 15 10
+# python3 showflattened.py flattened_images-x10-y15.txt 15 10 0
 """ get 1d flattened image to an picture on the sreen
 see CHANGE below
 """
@@ -9,7 +9,7 @@ from matplotlib import pyplot as plt
 
 
 A = np.loadtxt(sys.argv[1])
-#print(A.shape)
+print(A.shape)
 ydim=int(sys.argv[2])
 xdim=int(sys.argv[3])
 B=A.reshape((A.shape[0],ydim, xdim))
@@ -24,8 +24,9 @@ print (bigfig.shape)
 #bigfig= bigfig.reshape((150, -1))
 
 # CHANGE (if dimensions do not match)
-bigfig= np.hsplit(bigfig,5)
-bigfig= np.concatenate(bigfig[:][:][:],0)
+if int(sys.argv[4]) > 0:
+    bigfig= np.hsplit(bigfig,sys.argv[4])
+    bigfig= np.concatenate(bigfig[:][:][:],0)
 
 #bigfig=np.asarray(bigfig)
 #bigfig = np.asarray(bigfig)
