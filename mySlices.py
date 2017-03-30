@@ -14,7 +14,9 @@ class MySlices():
     (intX, intY),  # upper left corner
     (intX + intWidth, intY + intHeight),  # lower right corner
 
-    OUTPUT: lots of small opencv rectangles for character recognition
+    OUTPUT: np array of plates
+    each plate consists of 7 rectangles for character recognition and 8'th item which
+    has [centerX centerY 0 0], where the canter of the plate is given
 
     If initial reactangles do not result character regocnition use
     makeSmaller
@@ -30,7 +32,7 @@ class MySlices():
 
     
     def __init__(self, intX=0, intY=0, intWidth=None, intHeight=None, strideX=10, strideY=10,
-                 XYratio=5/7, plateWidth=6.38, middleWidth=0.38, minHeight=6, nMakeSmallerSteps=10):
+                 XYratio=2/3, plateWidth=6.38, middleWidth=0.38, minHeight=6, nMakeSmallerSteps=10):
         self.intX = intX           # upper left (usually zero, if not add in the end, NOT DONE)
         self.intY = intY           # upper left (usually zero, if not add in the end, NOT DONE)
         self.intWidth = intWidth   # initial guess of the width of the plate
@@ -72,7 +74,7 @@ class MySlices():
         return self.intHeight
 
 
-    def getBoxes(self):
+    def getPlates(self):
         """ With current one-character width and height and with current srtideX, strideY
         OUTPUT all possible one-character boxes"""
         currentTopLeftX = 0
@@ -90,19 +92,24 @@ class MySlices():
                 4 * self.width + currentMiddle,
                 5 * self.width + currentMiddle]
 
-        print(sumX, addX)
+        #print(sumX, addX)
 
-        boxes = []
+        plates = []
         while (currentTopLeftY < self.height ):  # stride Y, only first one character needed for stride
             while (currentTopLeftX  < self.width): # stride X, only first character needed
                 while (currentTopLeftY+top + self.height) < self.intHeight: #height Y
                     while (currentTopLeftX+left + self.width*self.plateWidth) < self.intWidth:  #3+1+3 characters in x
+                        boxes = []
                         for charPos, charWidth in zip(sumX, addX):
                             boxes.append([currentTopLeftX+left+charPos,
                                           currentTopLeftY+top,
                                           charWidth,
                                           self.height])
-                            print("X:",currentTopLeftX+left+charPos)
+                            #print("X:",currentTopLeftX+left+charPos)
+                        #centerX = int(round(boxes[3][0]+0.5*boxes[3][2]))
+                        #centerY = int(round(boxes[3][1]+0.5*boxes[3][3]))
+                        #boxes.append([centerX, centerY, 0, 0])  # two last zeros are dummies at the moment
+                        plates.append(boxes)
                         left = left + self.plateWidth
                     top = top + self.height
                     left = 0
@@ -114,7 +121,7 @@ class MySlices():
             top = 0
             left = 0
 
-        return np.asarray(boxes, dtype=np.uint16)
+        return np.asarray(plates, dtype=np.uint16)
 
 import matplotlib.pyplot as plt
 import cv2
@@ -122,21 +129,24 @@ import cv2
 if __name__ == "__main__":
     img = cv2.imread(sys.argv[1])
 
-    boxes = MySlices(intWidth=img.shape[1],intHeight=img.shape[0])
-    boxes.makeSmaller()
-    boxes.makeSmaller()
-    boxes.makeSmaller()
-    print("BOX SHAPE",boxes.getBoxes().shape)
-    print
-    print("SHAPE:", img.shape)
+    plates = MySlices(intWidth=img.shape[1],intHeight=img.shape[0])
+    # print(plates.getPlates().shape)
+
+    plates.makeSmaller()
+    plates.makeSmaller()
+    plates.makeSmaller()
+    #print("BOX SHAPE",boxes.getBoxes().shape)
+    #print
+    # print("SHAPE:", img.shape)
     clone = img.copy()
     plt.imshow(clone, cmap='gray', interpolation='bicubic')
     plt.xticks([]), plt.yticks([])  # to hide tick values on X and Y axis
     while True:
         izero = 0
-        for rectangle in boxes.getBoxes():
+        for plates in plates.getPlates():
+         for rectangle in plates:
 
-            print(rectangle[0], rectangle[1], rectangle[2], rectangle[3])
+            # print(rectangle[0], rectangle[1], rectangle[2], rectangle[3])
             #plt.gca().add_patch(plt.Rectangle((rectangle[0], boxes.getPlateHeight()-rectangle[1]),
             #                                 rectangle[2]-rectangle[0],
             #                                 rectangle[3]-rectangle[1],
@@ -158,7 +168,7 @@ if __name__ == "__main__":
 
 
         #plt.clf()
-        myContinue = boxes.makeSmaller()
+        myContinue = plates.makeSmaller()
         if not myContinue:
             break
 

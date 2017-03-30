@@ -6,6 +6,7 @@ import operator
 import os
 import sys
 from myContours import ContoursWithFilters
+from mySlices import MySlices
 
 
 resolution=(8,12)
@@ -38,11 +39,22 @@ class GetPlateWithKNN():
         self.kNearest.train(npaFlattenedImages, cv2.ml.ROW_SAMPLE, npaClassifications)
         # to my understanting (mok), in opencv3 one cannot save the trained classifier
         print("Training classifier end")
+        self.image=None
+        self.slices = None
+        self.sliceNR = None # testing
 
-    def plate2Chars(self, image=None, useBlur=False):
+    def setImage(self, imagefile):
+        self.image = cv2.imread(imagefile, 0)
+        self.sliceNR = 0
+
+    def setSlices(self):
+        self.slices = MySlices(intWidth=self.image.shape[1], intHeight=self.image.shape[0])
+        print("IMAGE SIZE", self.image.shape[1], self.image.shape[0])
+
+    def plate2CharsWithContours(self, useBlur=False):
         """ for a given image, returns the plate 5 or 6 characters as characters"""
         # read in testing plate
-        contours = ContoursWithFilters(image = image)
+        contours = ContoursWithFilters(image = self.image)
         #cv2.imshow("imgT", image)
         #intChar = cv2.waitKey(0)
         # get grayscale image
@@ -86,12 +98,12 @@ class GetPlateWithKNN():
         for contour in contours.getContoursOnly():
             [intX, intY, intWidth, intHeight] = cv2.boundingRect(contour)
             # draw a green rect around the current char
-            cv2.rectangle(image,
+            cv2.rectangle(self.image,
                           (intX, intY),  # upper left corner
                           (intX + intWidth, intY + intHeight),  # lower right corner
                           (0, 0, 255),  # green
                           1)  # thickness
-        cv2.imshow("imgT", image)
+        cv2.imshow("imgT", self.image)
         intChar = cv2.waitKey(0)
 
         # now we should find (5) or 6 countours of same height
@@ -123,12 +135,12 @@ class GetPlateWithKNN():
             for contour in contours.getContoursOnly():
                 [intX, intY, intWidth, intHeight] = cv2.boundingRect(contour)
                 # draw a green rect around the current char
-                cv2.rectangle(image,
+                cv2.rectangle(self.image,
                               (intX, intY),  # upper left corner
                               (intX + intWidth, intY + intHeight),  # lower right corner
                               (0, 255, 255),  # green
                               2)  # thickness
-            cv2.imshow("imgT", image)
+            cv2.imshow("imgT", self.image)
             intChar = cv2.waitKey(0)
 
 
@@ -193,13 +205,59 @@ class GetPlateWithKNN():
 
         return strWithMinus
 
+    def plate2CharsWithSlides(self):
+        # slices = MySlices(intWidth=self.image.shape[1],intHeight=self.image.shape[0])
+
+        for plate in self.slices.getPlates():
+            strFinalString=''
+            clone = self.image.copy()
+            for (intX, intY, intWidth, intHeight) in plate:
+                # resize image, for recognition and storage
+                imageSmall = self.image.copy()[intY : intY + intHeight, intX : intX + intWidth]
+                imageSmallResized = cv2.resize(imageSmall,(RESIZED_IMAGE_WIDTH,RESIZED_IMAGE_HEIGHT))
+                # flatten image into 1d numpy array
+                oneDimageSmallResized = imageSmallResized.reshape((1, RESIZED_IMAGE_WIDTH * RESIZED_IMAGE_HEIGHT))
+                oneDimageSmallResized = np.float32(oneDimageSmallResized)
+
+                # call KNN function find_nearest
+                retval, npaResults, neigh_resp, dists \
+                = self.kNearest.findNearest(oneDimageSmallResized, k = 1)
+
+                # get character from results
+                strCurrentChar = str(chr(int(npaResults[0][0]))).upper()
+                # append current char to full string
+                strFinalString = strFinalString + strCurrentChar
+                cv2.rectangle(clone,(intX, intY), (intX+intWidth,intY+intHeight),
+                          (0,255,0),3) # top-left, bottom-right
+                if self.sliceNR == 279:
+                    cv2.imwrite(str(self.sliceNR)+str(intX)+'.test.del.jpg', imageSmallResized)
+
+            cv2.imwrite(str(self.sliceNR)+'.test.del.jpg', clone)
+
+            print(str(self.sliceNR)+'   ' + strFinalString)
+            self.sliceNR = self.sliceNR + 1
+
+
 ###################################################################################################
 if __name__ == "__main__":
     if len(sys.argv) > 1:
         getplate = GetPlateWithKNN(flatImagesFileName=sys.argv[2])
-    image = cv2.imread(sys.argv[1])
-    print("PLATE RESULT:", getplate.plate2Chars(image=image, useBlur=True))
-
+    getplate.setImage(imagefile=sys.argv[1])
+    getplate.setSlices()
+    #getplate.plate2CharsWithSlides()
+    getplate.slices.makeSmaller()
+    #getplate.plate2CharsWithSlides()
+    getplate.slices.makeSmaller()
+    #getplate.plate2CharsWithSlides()
+    getplate.slices.makeSmaller()
+    getplate.plate2CharsWithSlides()
+    sys.exit()
+    #print("PLATE RESULT with contours:", getplate.plate2CharsWithContours(image=image, useBlur=True))
+    while True:
+        getplate.plate2CharsWithSlides()
+        myContinue = getplate.slices.makeSmaller()
+        if not myContinue:
+            break
 
 
 
