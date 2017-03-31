@@ -62,6 +62,7 @@ class MySlices():
         """ make character box smaller, step = ratio * original image"""
         if absoluteStep:
             self.height = self.height - absoluteStep
+            print ("SH", self.height)
         else:
             self.height = self.height - self.makeSmallerStep
         self.width = int(round(self.height * self.XYratio))

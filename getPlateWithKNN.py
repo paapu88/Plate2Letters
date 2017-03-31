@@ -250,19 +250,21 @@ if __name__ == "__main__":
     #getplate.setImage(imagefile=sys.argv[1])
 
     getplate.setSlices()
+    #getplate.plate2CharsWithSlides()
+
+    for i in range(4):
+        getplate.slices.makeSmaller(absoluteStep=20)
     getplate.plate2CharsWithSlides()
+    sys.exit()
+
+    getplate.slices.makeSmaller()
+    #getplate.plate2CharsWithSlides()
 
     getplate.slices.makeSmaller()
     getplate.plate2CharsWithSlides()
 
-    getplate.slices.makeSmaller()
-    getplate.plate2CharsWithSlides()
-
-    getplate.slices.makeSmaller()
-    getplate.plate2CharsWithSlides()
-
-    getplate.slices.makeSmaller()
-    getplate.plate2CharsWithSlides()
+    #getplate.slices.makeSmaller()
+    #getplate.plate2CharsWithSlides()
 
     sys.exit()
     #print("PLATE RESULT with contours:", getplate.plate2CharsWithContours(image=image, useBlur=True))
