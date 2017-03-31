@@ -1,4 +1,4 @@
-# python3 getPlateWithKNN.py '/home/mka/PycharmProjects/Rekkari/Training/img/sample_pos5.jpg' 'flattened_images-x8-y12.txt'
+# python3 getPlateWithKNN.py '/home/mka/PycharmProjects/Rekkari/Training/img/sample_pos5.jpg' 'classifications.txt' 'flattened_images-x8-y12.txt'
 
 import cv2
 import numpy as np
@@ -7,7 +7,9 @@ import os
 import sys
 from myContours import ContoursWithFilters
 from mySlices import MySlices
-
+from tesserocr import PyTessBaseAPI, PSM
+import glob
+import shutil
 
 resolution=(8,12)
 
@@ -42,6 +44,12 @@ class GetPlateWithKNN():
         self.image=None
         self.slices = None
         self.sliceNR = None # testing
+
+        self.apiLetters = PyTessBaseAPI(psm=PSM.SINGLE_CHAR, lang='eng')
+        self.apiLetters.SetVariable("tessedit_char_whitelist","ABCDEFGHIJKLMNOPQRSTUVXYZÅÄÖ")
+
+        self.apiDigits = PyTessBaseAPI(psm=PSM.SINGLE_CHAR, lang='eng')
+        self.apiDigits.SetVariable("tessedit_char_whitelist", "0123456789")
 
     def setImage(self, imagefile):
         self.image = cv2.imread(imagefile, 0)
@@ -229,8 +237,8 @@ class GetPlateWithKNN():
                 strFinalString = strFinalString + strCurrentChar
                 cv2.rectangle(clone,(intX, intY), (intX+intWidth,intY+intHeight),
                           (0,255,0),3) # top-left, bottom-right
-                if self.sliceNR == 279:
-                    cv2.imwrite(str(self.sliceNR)+str(intX)+'.test.del.jpg', imageSmallResized)
+                if self.sliceNR == 1019:
+                    cv2.imwrite(str(self.sliceNR)+str(intX)+'.test.del.png', imageSmallResized)
 
             cv2.imwrite(str(self.sliceNR)+'.test.del.jpg', clone)
 
@@ -238,10 +246,91 @@ class GetPlateWithKNN():
             self.sliceNR = self.sliceNR + 1
 
 
+    def plate2CharsWithSlidesWithTesseract(self):
+        """ here tesseract is used for single character recognition"""
+
+        for plate in self.slices.getPlates():
+            strFinalString=''
+            clone = self.image.copy()
+            confidence=1.0
+            #letters
+            for i , (intX, intY, intWidth, intHeight) in enumerate(plate[0:3]):
+                # resize image, for recognition and storage
+                imageSmall = self.image.copy()[intY : intY + intHeight, intX : intX + intWidth]
+                #imageSmall = np.array(imageSmall, np.byte)
+
+                # temporary stupid solution, use bytes instead
+                cv2.imwrite('tmp.png', imageSmall)
+                self.apiLetters.SetImageFile('tmp.png')
+                #self.api.SetImageBytes(imageSmall)
+
+
+                # get character from results
+                strCurrentChar = self.apiLetters.GetUTF8Text()
+                # append current char to full string
+                if len(strCurrentChar) > 0:
+                    strFinalString = strFinalString + strCurrentChar[0]
+                    # how confident tesseract is for a single character?
+                    confidence = confidence * 0.01 * self.apiLetters.AllWordConfidences()[0]
+
+                else:
+                    strFinalString = strFinalString + ' '
+                    confidence=0.0
+
+                cv2.rectangle(clone,(intX, intY), (intX+intWidth,intY+intHeight),
+                          (0,255,0),3) # top-left, bottom-right
+                cv2.imwrite(str(i)+'tmp.del.png', imageSmall)
+                #if self.sliceNR == 1019:
+                #    cv2.imwrite(str(self.sliceNR)+str(intX)+'.test.del.png', imageSmallResized)
+
+            # digits
+            for i , (intX, intY, intWidth, intHeight) in enumerate(plate[-3:]):
+                # resize image, for recognition and storage
+                imageSmall = self.image.copy()[intY : intY + intHeight, intX : intX + intWidth]
+                #imageSmall = np.array(imageSmall, np.byte)
+
+                # temporary stupid solution, use bytes instead
+                cv2.imwrite('tmp.png', imageSmall)
+                self.apiDigits.SetImageFile('tmp.png')
+                #self.api.SetImageBytes(imageSmall)
+
+
+                # get character from results
+                strCurrentChar = self.apiDigits.GetUTF8Text()
+                # append current char to full string
+                if len(strCurrentChar) > 0:
+                    strFinalString = strFinalString + strCurrentChar[0]
+                    # how confident tesseract is for a single character?
+                    confidence = confidence * 0.01 * self.apiDigits.AllWordConfidences()[0]
+
+                else:
+                    strFinalString = strFinalString + ' '
+                    confidence=0.0
+
+                cv2.rectangle(clone,(intX, intY), (intX+intWidth,intY+intHeight),
+                          (0,255,0),3) # top-left, bottom-right
+                cv2.imwrite(str(i+3)+'tmp.del.png', imageSmall)
+                #if self.sliceNR == 1019:
+                #    cv2.imwrite(str(self.sliceNR)+str(intX)+'.test.del.png', imageSmallResized)
+
+            if confidence > 0.7:
+                cv2.imwrite(str(self.sliceNR)+'.test.del.jpg', clone)
+                dest_dir = str(self.sliceNR)+'DEL'
+                os.makedirs(dest_dir)
+
+                for file in glob.glob('*tmp.del.png'):
+                    shutil.copy(file, dest_dir)
+
+
+                print(str(self.sliceNR)+'   ' + strFinalString + ' confidence:' + str(confidence))
+                self.sliceNR = self.sliceNR + 1
+
+
+
 ###################################################################################################
 if __name__ == "__main__":
     if len(sys.argv) > 1:
-        getplate = GetPlateWithKNN(flatImagesFileName=sys.argv[2])
+        getplate = GetPlateWithKNN(classificationFileName=sys.argv[2], flatImagesFileName=sys.argv[3])
 
     getplate.setImage(imagefile=sys.argv[1])
 
@@ -252,19 +341,29 @@ if __name__ == "__main__":
     getplate.setSlices()
     #getplate.plate2CharsWithSlides()
 
-    for i in range(4):
-        getplate.slices.makeSmaller(absoluteStep=20)
-    getplate.plate2CharsWithSlides()
+
+    getplate.slices.makeSmaller()
+    #getplate.plate2CharsWithSlidesWithTesseract()
+
+    getplate.slices.makeSmaller()
+    #getplate.plate2CharsWithSlidesWithTesseract()
+
+    getplate.slices.makeSmaller()
+    #getplate.plate2CharsWithSlidesWithTesseract()
+
+    getplate.slices.makeSmaller()
+    getplate.plate2CharsWithSlidesWithTesseract()
+
     sys.exit()
 
     getplate.slices.makeSmaller()
-    #getplate.plate2CharsWithSlides()
+    getplate.plate2CharsWithSlides()
 
     getplate.slices.makeSmaller()
     getplate.plate2CharsWithSlides()
 
-    #getplate.slices.makeSmaller()
-    #getplate.plate2CharsWithSlides()
+    getplate.slices.makeSmaller()
+    getplate.plate2CharsWithSlides()
 
     sys.exit()
     #print("PLATE RESULT with contours:", getplate.plate2CharsWithContours(image=image, useBlur=True))

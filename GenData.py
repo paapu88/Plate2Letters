@@ -140,6 +140,7 @@ def main(*args):
                     npaFlattenedImage \
                         = imgROIResized.\
                         reshape((1, RESIZED_IMAGE_WIDTH * RESIZED_IMAGE_HEIGHT))
+                    npaFlattenedImage = np.float32(npaFlattenedImage)
                     # add current flattened impage numpy array to
                     # list of flattened image numpy arrays
                     if npaFlattenedImagesWithRes[i] is None:

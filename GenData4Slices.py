@@ -142,6 +142,7 @@ class Example():
             for i, (RESIZED_IMAGE_WIDTH, RESIZED_IMAGE_HEIGHT) in enumerate(resolutions):
                 resized = cv2.resize(clone.copy(),(RESIZED_IMAGE_WIDTH, RESIZED_IMAGE_HEIGHT))
                 flattenedImage = resized.reshape((1, RESIZED_IMAGE_WIDTH * RESIZED_IMAGE_HEIGHT))
+                flattenedImage = np.float32(flattenedImage)
                 # add current flattened impage numpy array to
                 # list of flattened image numpy arrays
                 if self.flattenedImages[i] is None:
@@ -156,10 +157,10 @@ class Example():
                 #plt.show()
             # write character codes
             # convert classifications list of ints to numpy array of floats
-            intClassifications = np.array(self.intClassifications, np.int)
+            fClassifications = np.array(self.intClassifications, np.float32)
             # flatten numpy array of floats to 1d so we can write to file later
-            np.savetxt("classifications.txt", intClassifications.reshape((intClassifications.size, 1)))
-            print("saved character"+chr(int(intClassifications[-1])))
+            np.savetxt("classifications.txt", fClassifications.reshape((fClassifications.size, 1)))
+            print("saved character"+chr(int(fClassifications[-1])))
 
         else:
             print ("sorry, not a valid character")

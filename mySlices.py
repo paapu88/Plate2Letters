@@ -31,7 +31,7 @@ class MySlices():
     """
 
     
-    def __init__(self, intX=0, intY=0, intWidth=None, intHeight=None, strideX=10, strideY=10,
+    def __init__(self, intX=0, intY=0, intWidth=None, intHeight=None, strideX=2, strideY=2,
                  XYratio=2/3, plateWidth=6.38, middleWidth=0.38, minHeight=6, nMakeSmallerSteps=10):
         self.intX = intX           # upper left (usually zero, if not add in the end, NOT DONE)
         self.intY = intY           # upper left (usually zero, if not add in the end, NOT DONE)
