@@ -242,22 +242,35 @@ class GetPlateWithKNN():
 if __name__ == "__main__":
     if len(sys.argv) > 1:
         getplate = GetPlateWithKNN(flatImagesFileName=sys.argv[2])
+
     getplate.setImage(imagefile=sys.argv[1])
+
+
+    #print("PLATE RESULT with contours:", getplate.plate2CharsWithContours(useBlur=True))
+    #getplate.setImage(imagefile=sys.argv[1])
+
     getplate.setSlices()
-    #getplate.plate2CharsWithSlides()
-    getplate.slices.makeSmaller()
-    #getplate.plate2CharsWithSlides()
-    getplate.slices.makeSmaller()
-    #getplate.plate2CharsWithSlides()
+    getplate.plate2CharsWithSlides()
+
     getplate.slices.makeSmaller()
     getplate.plate2CharsWithSlides()
+
+    getplate.slices.makeSmaller()
+    getplate.plate2CharsWithSlides()
+
+    getplate.slices.makeSmaller()
+    getplate.plate2CharsWithSlides()
+
+    getplate.slices.makeSmaller()
+    getplate.plate2CharsWithSlides()
+
     sys.exit()
     #print("PLATE RESULT with contours:", getplate.plate2CharsWithContours(image=image, useBlur=True))
-    while True:
-        getplate.plate2CharsWithSlides()
-        myContinue = getplate.slices.makeSmaller()
-        if not myContinue:
-            break
+    #while True:
+    #    getplate.plate2CharsWithSlides()
+    #    myContinue = getplate.slices.makeSmaller()
+    #    if not myContinue:
+    #        break
 
 
 
